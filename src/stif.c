@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "stif.h"
 
@@ -23,31 +24,29 @@ void stif_free(stif_t *s)
 stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, size_t *bytes_read)
 {
     printf(">>>start read\n");
+
     printf("buffer size %ld\n", buffer_size);
 
     stif_block_t *b = malloc(sizeof(stif_block_t));
     if (b == NULL)
         return NULL;
 
-    // Reading type and data size
-    memcpy(b, buffer, 5);
+    // Data type
+    memcpy(&(b->block_type), buffer, 1);
+    printf("block type %d\n", (int) b->block_type);
 
-    printf("block type %d\n", b->block_type);
-    printf("block size %d\n", b->block_size);
+    // Data size
+    memcpy(&(b->block_size), buffer + 1, 4);
+    printf("block size %d\n", (int) b->block_size);
 
-    // Data
-    uint8_t *d = malloc((b->block_size));
-    if (d == NULL)
-        return NULL;
-    memcpy(d, buffer + 5, b->block_size);
-    b->data = d;
+    // Data retrieval
+    memcpy(&(b->data), buffer + 5, b->block_size);
 
     // Bytes read
-    *bytes_read = b->block_size;
+    *bytes_read = 5 + b->block_size;
     printf("bytes read %lu\n", *bytes_read);
 
-
-    // Next
+    // Next block
     b->next = NULL;
 
     printf(">>>end read\n");
@@ -68,10 +67,11 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 {
     
     printf(">>>start parse\n");
+
     size_t i = 0;
     uint16_t magic = 0;
     size_t * bytes_read = malloc(sizeof(size_t));
-    stif_header_t h;
+    stif_header_t h = {0};
     stif_block_t *hb = malloc(sizeof(stif_block_t));
 
     stif_t *s = malloc(sizeof(stif_t));
@@ -87,29 +87,25 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 
     printf("magic %04X\n", magic);
 
-    // Header block and header struct
+    // Header block
     hb = read_stif_block(buffer + STIF_MAGIC_SIZE, STIF_BLOCK_HEADER_SIZE, bytes_read);
-    memcpy(&h, hb->data, STIF_BLOCK_HEADER_SIZE);
+
+    // Other header struct
+    memcpy(&h, &(hb->data), STIF_BLOCK_HEADER_SIZE);
 
     printf("width %d\n", h.width);
     printf("height %d\n", h.height);
     printf("color type %d\n", h.color_type);
 
-    i = STIF_MAGIC_SIZE + STIF_BLOCK_HEADER_SIZE;
+    i = STIF_MAGIC_SIZE + STIF_BLOCK_MIN_SIZE + STIF_BLOCK_HEADER_SIZE;
 
     // First data block
     stif_block_t *curr = malloc(sizeof(stif_block_t));
-    curr = read_stif_block(buffer + i, buffer_size, bytes_read);
+    curr = hb;
 
-    // Main loop to read blocks
-    /*while (i < buffer_size) {
-        curr = read_stif_block(buffer + i, sizeof(buffer), bytes_read);
-        printf("i is %ld\n",i);
-        prev->next = curr;
-        prev = curr;
-        i = i + *bytes_read;
-        printf("i is now %ld\n", i);
-    }*/
+    // TODO Loop
+
+    //curr = read_stif_block(buffer + i, buffer_size, bytes_read);
 
     s->header = h;
     s->grayscale_pixels = NULL;
