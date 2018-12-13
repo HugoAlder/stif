@@ -68,12 +68,11 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     
     printf(">>>start parse\n");
 
-    size_t i = 0;
+    size_t i, j = 0;
     uint16_t magic = 0;
     size_t * bytes_read = malloc(sizeof(size_t));
     stif_header_t h = {0};
     stif_block_t *hb = malloc(sizeof(stif_block_t));
-
     stif_t *s = malloc(sizeof(stif_t));
 
     if (s == NULL)
@@ -96,23 +95,76 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     printf("width %d\n", h.width);
     printf("height %d\n", h.height);
     printf("color type %d\n", h.color_type);
+    size_t image_size = (size_t) h.width * h.height;
+    printf("image size %zu\n", image_size);
+
+    // Stif data
+    pixel_grayscale_t *grey = NULL;
+    pixel_rgb_t *color = NULL;
+    if (h.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
+        grey = malloc(image_size);
+        if (grey == NULL) {
+            printf("Error: malloc grey\n");
+            return NULL;
+        }
+    } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
+        color = malloc(image_size);
+        if (color == NULL) {
+            printf("Error: malloc color\n");
+            return NULL;
+        }
+    } else {
+        printf("Error: unknown color type\n");
+        return NULL;
+    }
 
     i = STIF_MAGIC_SIZE + STIF_BLOCK_MIN_SIZE + STIF_BLOCK_HEADER_SIZE;
 
     // First data block
     stif_block_t *curr = malloc(sizeof(stif_block_t));
-    curr = hb;
+    stif_block_t *prev = malloc(sizeof(stif_block_t));
+    prev = hb;
 
-    // TODO Loop
-
-    //curr = read_stif_block(buffer + i, buffer_size, bytes_read);
+    // Loop
+    while (i < buffer_size) {
+        curr = read_stif_block(buffer + i, buffer_size, bytes_read);
+        if (h.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
+            printf("coucou\n");
+            memcpy(grey + j, curr->data, curr->block_size);
+            printf("oui\n");
+            j = j + (size_t) curr->block_size;
+        } /*else if (h.color_type == STIF_COLOR_TYPE_RGB) {
+            if (curr->block_size % 3 != 0) {
+                printf("Error: number of block is not a multiple of 3 (color)\n");
+                return NULL;
+            }
+            void *tmp = realloc(color, curr->block_size);
+            if (tmp == NULL) {
+                printf("Error: tmp is empty (color)\n");
+                return NULL;
+            }
+            int k;
+            pixel_rgb_t pixel;
+            for (k = 0; k < curr->block_size; k = k + 3) {
+                pixel.red = curr->data[k];
+                pixel.green = curr->data[k + 1];
+                pixel.blue = curr->data[k + 2];
+                memcpy(color + j, &pixel, 3);
+            }
+        }*/
+        prev->next = curr;
+        prev = curr;
+        printf("I is gr ... No, i is %ld\n", i);
+        i = i + *bytes_read;
+    }
 
     s->header = h;
-    s->grayscale_pixels = NULL;
-    s->rgb_pixels = NULL;
+    s->grayscale_pixels = grey;
+    s->rgb_pixels = color;
     s->block_head = hb;
 
-    free(curr);
+    stif_block_free(curr);
+    stif_block_free(prev);
 
     printf(">>>end parse\n");
 
