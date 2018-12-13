@@ -159,10 +159,10 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
                 printf("%x", curr->data[k]);
             }
             printf("\n");
-            memcpy(grey + j, &(curr->data), (size_t) curr->block_size);
+            memcpy(grey + j, curr->data, (size_t) curr->block_size);
             j += (size_t) curr->block_size;
         } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
-            memcpy(color + j, &(curr->data), (size_t) curr->block_size);
+            memcpy(color + j, curr->data, (size_t) curr->block_size);
             j += (size_t) curr->block_size;
         }
 
