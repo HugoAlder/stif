@@ -4,6 +4,10 @@
 
 #include "stif.h"
 
+#define STIF_HEAD_WIDTH_SIZE        4
+#define STIF_HEAD_HEIGHT_SIZE       4
+#define STIF_HEAD_COLOR_TYPE_SIZE   1
+
 void stif_free(stif_t *s)
 {
     if (s == NULL) {
@@ -15,10 +19,9 @@ void stif_free(stif_t *s)
     if (s->rgb_pixels != NULL)
         free(s->rgb_pixels);
 
-    if (s->block_head == NULL)
-        printf("Idiot\n");
+    if (s->block_head != NULL)
+        stif_block_free(s->block_head);
 
-    stif_block_free(s->block_head);
     return;    
 }
 
@@ -27,6 +30,10 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
     printf(">>>start read\n");
 
     printf("buffer size %ld\n", buffer_size);
+
+    // In case block buffer is smaller than the minimal possible block
+    if (buffer_size < STIF_BLOCK_MIN_SIZE)
+        return NULL;
 
     stif_block_t *b = malloc(sizeof(stif_block_t));
     if (b == NULL)
@@ -43,10 +50,10 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
     b->data = malloc((size_t) b->block_size);
 
     // Data retrieval
-    memcpy(b->data, buffer + 5, b->block_size);
+    memcpy(b->data, buffer + STIF_BLOCK_MIN_SIZE, b->block_size);
 
     // Bytes read
-    *bytes_read = 5 + b->block_size;
+    *bytes_read = STIF_BLOCK_MIN_SIZE + b->block_size;
     printf("bytes read %lu\n", *bytes_read);
 
     // Next block
@@ -83,11 +90,11 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 
     size_t i, j = 0;
     uint16_t magic = 0;
-    size_t * bytes_read = malloc(sizeof(size_t));
+    size_t bytes_read = 0;
     stif_header_t h = {0};
     stif_block_t *hb = NULL;
-    stif_t *s = malloc(sizeof(stif_t));
 
+    stif_t *s = malloc(sizeof(stif_t));
     if (s == NULL)
         return NULL;
 
@@ -100,14 +107,14 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     printf("magic %04X\n", magic);
 
     // Header block
-    hb = read_stif_block(buffer + STIF_MAGIC_SIZE, STIF_BLOCK_HEADER_SIZE, bytes_read);
+    hb = read_stif_block(buffer + STIF_MAGIC_SIZE, STIF_BLOCK_HEADER_SIZE, &(bytes_read));
 
     // Other header struct
     memcpy(&h, &(hb->data), STIF_BLOCK_HEADER_SIZE);
 
-    memcpy(&(h.width), hb->data, 4);
-    memcpy(&(h.height), hb->data + 4, 4);
-    memcpy(&(h.color_type), hb->data + 8, 1);
+    memcpy(&(h.width), hb->data, STIF_HEAD_WIDTH_SIZE);
+    memcpy(&(h.height), hb->data + STIF_HEAD_WIDTH_SIZE, STIF_HEAD_HEIGHT_SIZE);
+    memcpy(&(h.color_type), hb->data + STIF_HEAD_WIDTH_SIZE + STIF_HEAD_HEIGHT_SIZE, STIF_HEAD_COLOR_TYPE_SIZE);
 
     printf("width %d\n", h.width);
     printf("height %d\n", h.height);
@@ -119,6 +126,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     pixel_grayscale_t *grey = NULL;
     pixel_rgb_t *color = NULL;
 
+    // Allocating required space for data given the color type
     if (h.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
         grey = malloc(image_size * sizeof(pixel_grayscale_t));
         if (grey == NULL) {
@@ -142,10 +150,10 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     stif_block_t *curr = NULL;
     stif_block_t *prev = hb;
 
-    // Loop
+    // Main loop
     while (i < buffer_size) {
 
-        curr = read_stif_block(buffer + i, buffer_size, bytes_read);
+        curr = read_stif_block(buffer + i, buffer_size, &(bytes_read));
 
         if (curr == NULL) {
             printf("Error: curr is NULL\n");
@@ -153,31 +161,34 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         }
 
         if (h.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
+            memcpy(grey + j, curr->data, (size_t) curr->block_size);
+        } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
+
+            if (curr->block_size % sizeof(pixel_rgb_t) != 0) {
+                printf("Error: block size not a multiple of 3\n");
+                return NULL;
+            }
+
+            memcpy(color + j, curr->data, (size_t) curr->block_size);
+            /*printf("block\n");
             int k;
-            printf("block\n");
             for (k = 0; k < curr->block_size; k++) {
                 printf("%x", curr->data[k]);
             }
-            printf("\n");
-            memcpy(grey + j, curr->data, (size_t) curr->block_size);
-            j += (size_t) curr->block_size;
-        } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
-            memcpy(color + j, curr->data, (size_t) curr->block_size);
-            j += (size_t) curr->block_size;
+            printf("\n");*/
         }
 
+        j += (size_t) curr->block_size;
         prev->next = curr;
         prev = curr;
         printf("i %ld\n", i);
-        i += *bytes_read;
+        i += bytes_read;
     }
 
     s->header = h;
     s->grayscale_pixels = grey;
     s->rgb_pixels = color;
-    s->block_head = hb;
-
-    free(bytes_read);
+    s->block_head = hb; 
 
     printf(">>>end parse\n");
 
