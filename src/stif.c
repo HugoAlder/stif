@@ -73,12 +73,8 @@ void stif_block_free(stif_block_t *b)
     // Data
     free(b->data);
     b->data = NULL;
-
-    // Freeing next block in a recursive way
-    if (b->next != NULL) {
-        stif_block_free(b->next);
-        free(b);
-    }
+    stif_block_free(b->next);
+    free(b);
 
     return;
 }
@@ -163,13 +159,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         if (h.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
             memcpy(grey + j, curr->data, (size_t) curr->block_size);
         } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
-
-            if (curr->block_size % sizeof(pixel_rgb_t) != 0) {
-                printf("Error: block size not a multiple of 3\n");
-                return NULL;
-            }
-
-            memcpy(color + j, curr->data, (size_t) curr->block_size);
+            memcpy(color + j / 3, curr->data, (size_t) curr->block_size);
             /*printf("block\n");
             int k;
             for (k = 0; k < curr->block_size; k++) {
@@ -188,6 +178,12 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     s->header = h;
     s->grayscale_pixels = grey;
     s->rgb_pixels = color;
+
+    /*if (curr->block_size % sizeof(pixel_rgb_t) != 0) {
+        printf("Error: block size not a multiple of 3\n");
+        return NULL;
+    }*/
+
     s->block_head = hb; 
 
     printf(">>>end parse\n");
