@@ -1,6 +1,6 @@
 # Main makefile
 
-SUBDIR = src regress
+SUBDIR = src regress test
 
 OBJDIR = obj
 BINDIR = bin
