@@ -78,8 +78,9 @@ void stif_block_free(stif_block_t *b)
 
     // Data
     free(b->data);
-    b->data = NULL;
-    stif_block_free(b->next);
+    // b->data = NULL;
+    if (b->next != NULL)
+        stif_block_free(b->next);
     free(b);
 
     return;
