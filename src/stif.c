@@ -22,6 +22,8 @@ void stif_free(stif_t *s)
     if (s->block_head != NULL)
         stif_block_free(s->block_head);
 
+    free(s);
+
     return;    
 }
 
@@ -184,12 +186,6 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
             memcpy(grey + j, curr->data, (size_t) curr->block_size);
         } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
             memcpy(color + j / 3, curr->data, (size_t) curr->block_size);
-            /*printf("block\n");
-            int k;
-            for (k = 0; k < curr->block_size; k++) {
-                printf("%x", curr->data[k]);
-            }
-            printf("\n");*/
         }
 
         j += (size_t) curr->block_size;
@@ -202,11 +198,6 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     s->header = h;
     s->grayscale_pixels = grey;
     s->rgb_pixels = color;
-
-    /*if (curr->block_size % sizeof(pixel_rgb_t) != 0) {
-        printf("Error: block size not a multiple of 3\n");
-        return NULL;
-    }*/
 
     s->block_head = hb; 
 
