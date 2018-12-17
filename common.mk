@@ -1,7 +1,7 @@
 # Variable shared by all targets
 
 # Use gcc by default
-CC = gcc
+CC ?= gcc
 
 # Speed up the build
 NPROC_EXISTS := $(shell which nproc)

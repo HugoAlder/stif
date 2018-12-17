@@ -4,6 +4,9 @@ SUBDIR = src regress test
 
 OBJDIR = obj
 BINDIR = bin
+COV    = cov
+
+export
 
 all:
 	@for dir in ${SUBDIR} ; do \
@@ -21,4 +24,4 @@ regress-valgrind:
 
 clean:
 	@echo "[*] Cleaning"
-	rm -rf ${OBJDIR} ${BINDIR}
+	rm -rf ${OBJDIR} ${BINDIR} ${COV}
