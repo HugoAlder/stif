@@ -42,8 +42,10 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
         return NULL;
 
     stif_block_t *b = malloc(sizeof(stif_block_t));
-    if (b == NULL)
+    if (b == NULL) {
+        stif_block_free(b);
         return NULL;
+    }
 
     // Data type
     memcpy(&(b->block_type), buffer, 1);
@@ -103,13 +105,13 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 
     stif_t *s = malloc(sizeof(stif_t));
     if (s == NULL)
-        return NULL;
+        goto error;
 
     memcpy(&magic, buffer, STIF_MAGIC_SIZE);
     
     // Checking magic
     if (magic != STIF_MAGIC)
-        return NULL;
+        goto error;
 
     printf("magic %04X\n", magic);
 
@@ -125,7 +127,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 
     // Invalid size
     if (h.width < 0 || h.height < 0)
-        return NULL;
+        goto error;
 
     printf("width %d\n", h.width);
     printf("height %d\n", h.height);
@@ -142,29 +144,29 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 
         // Grayscale image too big
         if (image_size > buffer_size - STIF_MAGIC_SIZE - STIF_BLOCK_MIN_SIZE - STIF_BLOCK_HEADER_SIZE )
-            return NULL;
+            goto error;
 
         grey = malloc(image_size * sizeof(pixel_grayscale_t));
 
         if (grey == NULL) {
             printf("Error: malloc grey\n");
-            return NULL;
+            goto error;
         }
     } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
 
         // Rgb image too big
         if (image_size > (buffer_size - STIF_MAGIC_SIZE - STIF_BLOCK_MIN_SIZE - STIF_BLOCK_HEADER_SIZE / 3))
-            return NULL;
+            goto error;
 
         color = malloc(image_size * sizeof(pixel_rgb_t));
 
         if (color == NULL) {
             printf("Error: malloc color\n");
-            return NULL;
+            goto error;
         }
     } else {
         printf("Error: unknown color type\n");
-        return NULL;
+        
     }
 
     i = STIF_MAGIC_SIZE + STIF_BLOCK_MIN_SIZE + STIF_BLOCK_HEADER_SIZE;
@@ -180,7 +182,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 
         if (curr == NULL) {
             printf("Error: curr is NULL\n");
-            return NULL;
+            goto error;
         }
 
         if (h.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
@@ -205,6 +207,10 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     printf(">>>end parse\n");
 
     return s;
+
+error:
+    stif_free(s);
+    return NULL;
 }
 
 
