@@ -18,13 +18,21 @@ L'objectif de cet exercice était de parser un fichier image de type STIF. Une f
 
 ## Outils utilisés
 
-**valgrind** Nous avons utilisé cet outil afin de détecter les fuites mémoires de notre programme.
+### valgrind
 
-**check.h** Cette librairie nous a permi d'écrire des tests unitaires.
+Nous avons utilisé cet outil afin de détecter les fuites mémoires de notre programme.
 
-**lcov** Cet outil nous a permis de connaître le test coverage de notre programme.
+### check.h
 
-**afl** Le fuzzing permet de créer des images aléatoires afin de tester un grand nombre de cas d'erreurs facilement. Nous avons "fuzzé" notre programme afin de déterminer les cas d'erreurs que nous n'avons pas traités.
+Cette librairie nous a permi d'écrire des tests unitaires.
+
+### lcov
+
+Cet outil nous a permis de connaître le test coverage de notre programme.
+
+### afl
+
+Le fuzzing permet de créer des images aléatoires afin de tester un grand nombre de cas d'erreurs facilement. Nous avons "fuzzé" notre programme afin de déterminer les cas d'erreurs que nous n'avons pas traités.
 
 ## Conception
 
