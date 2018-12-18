@@ -49,13 +49,18 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
     // Data size
     memcpy(&(b->block_size), buffer + 1, 4);
 
+    // Bytes read
+    *bytes_read = STIF_BLOCK_MIN_SIZE + b->block_size;
+
+    if (*bytes_read > buffer_size) {
+        stif_block_free(b);
+        return NULL;
+    }
+
     b->data = malloc((size_t) b->block_size);
 
     // Data retrieval
     memcpy(b->data, buffer + STIF_BLOCK_MIN_SIZE, b->block_size);
-
-    // Bytes read
-    *bytes_read = STIF_BLOCK_MIN_SIZE + b->block_size;
 
     // Next block
     b->next = NULL;
@@ -101,7 +106,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         goto error;
 
     // Header block
-    hb = read_stif_block(buffer + STIF_MAGIC_SIZE, STIF_BLOCK_HEADER_SIZE, &(bytes_read));
+    hb = read_stif_block(buffer + STIF_MAGIC_SIZE, buffer_size - STIF_MAGIC_SIZE, &(bytes_read));
 
     // Other header struct
     memcpy(&h, &(hb->data), STIF_BLOCK_HEADER_SIZE);
@@ -111,7 +116,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     memcpy(&(h.color_type), hb->data + STIF_HEAD_WIDTH_SIZE + STIF_HEAD_HEIGHT_SIZE, STIF_HEAD_COLOR_TYPE_SIZE);
 
     // Invalid size
-    if (h.width < 0 || h.height < 0)
+    if (h.width <= 0 || h.height <= 0)
         goto error;
 
     size_t image_size = (size_t) h.width * h.height;
@@ -156,7 +161,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     // Main loop
     while (i < buffer_size) {
 
-        curr = read_stif_block(buffer + i, buffer_size, &(bytes_read));
+        curr = read_stif_block(buffer + i, buffer_size - i, &(bytes_read));
 
         if (curr == NULL) {
             goto error;
@@ -171,7 +176,6 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         j += (size_t) curr->block_size;
         prev->next = curr;
         prev = curr;
-        printf("i %ld\n", i);
         i += bytes_read;
     }
 

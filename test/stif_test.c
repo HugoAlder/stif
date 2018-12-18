@@ -20,15 +20,26 @@ END_TEST
 START_TEST(read_stif_block_buffer_too_small)
 {
     size_t bytes_read = 0;
-    unsigned char buffer[] = "\x00\x09\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00";
+    unsigned char buffer[] = "\x00\x09\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00";
     stif_block_t *block = NULL;
-    block = read_stif_block(buffer, 4, &bytes_read);
 
+    block = read_stif_block(buffer, 4, &bytes_read);
+    ck_assert(block == NULL);
+}
+END_TEST
+
+/*START_TEST(read_stif_block_too_much_bytes_read)
+{
+    size_t bytes_read = 0;
+    unsigned char buffer[] = "\x00\x09\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00";
+    stif_block_t *block = NULL;
+
+    block = read_stif_block(buffer, 6, &bytes_read);
     ck_assert(block == NULL);
 
     stif_block_free(block);
 }
-END_TEST
+END_TEST*/
 
 // Test several features of read_stif_block
 START_TEST(read_stif_block_general)
@@ -52,6 +63,28 @@ START_TEST(read_stif_block_general)
     ck_assert(block->data[0] == 0xFF);
     ck_assert(bytes_read == 6);
     stif_block_free(block);
+
+    block = read_stif_block(data, 10, &bytes_read);
+}
+END_TEST
+
+START_TEST(parse_stif_width_height)
+{
+    stif_t *stif;
+
+    unsigned char bad_width[] = "\xFE\xCA"
+        "\x00\x09\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00"
+        "\x01\x01\x00\x00\x00\xFF";
+
+    stif = parse_stif(bad_width, 22);
+    ck_assert(stif == NULL);
+
+    unsigned char bad_height[] = "\xFE\xCA"
+        "\x00\x09\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+        "\x01\x01\x00\x00\x00\xFF";
+
+    stif = parse_stif(bad_height, 22);
+    ck_assert(stif == NULL);
 }
 END_TEST
 
@@ -106,13 +139,13 @@ START_TEST(parse_stif_color_type)
     ck_assert((stif->header).color_type == STIF_COLOR_TYPE_RGB);
     stif_free(stif);
 
-/*    unsigned char bad_buffer[] = "\xFE\xCA"
+    unsigned char bad_buffer[] = "\xFE\xCA"
         "\x00\x09\x00\x00\x00\x03\x00\x00\x00\x01\x00\x00\x00\x02"
         "\x01\x09\x00\x00\x00\xff\x00\x00\x00\xff\x00\x00\x00\xff";
 
     stif = parse_stif(bad_buffer, 30);
     ck_assert(stif == NULL);
-    stif_free(stif);*/
+    stif_free(stif);
 }
 END_TEST
 
@@ -137,11 +170,23 @@ START_TEST(parse_stif_size)
     ck_assert_int_eq((stif->header).width, 5);
     ck_assert_int_eq((stif->header).height, 2);
 
-   unsigned char bad_size[] = "\xFE\xCA"
+    unsigned char bad_size[] = "\xFE\xCA"
         "\x00\x09\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00"
         "\x01\x01\x00\x00\x00\x01";
 
     stif = parse_stif(bad_size, 22);
+    ck_assert(stif == NULL);
+}
+END_TEST
+
+START_TEST(parse_stif_first_data_null)
+{
+    stif_t *stif;
+
+    unsigned char no_data[] = "\xFE\xCA"
+        "\x00\x09\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00";
+
+    stif = parse_stif(no_data, 16);
     ck_assert(stif == NULL);
 }
 END_TEST
@@ -161,6 +206,7 @@ static Suite *parse_suite(void)
     tcase_add_test(tc_read_stif, read_stif_block_buffer_null);
     tcase_add_test(tc_read_stif, read_stif_block_buffer_too_small);
     tcase_add_test(tc_read_stif, read_stif_block_general);
+    //tcase_add_test(tc_read_stif, read_stif_block_too_much_bytes_read);
 
     /* parse_stif */
     tc_parse_stif = tcase_create("parse_stif");
@@ -169,7 +215,9 @@ static Suite *parse_suite(void)
     tcase_add_test(tc_parse_stif, parse_stif_magic);
     tcase_add_test(tc_parse_stif, parse_stif_color_type);
     tcase_add_test(tc_parse_stif, parse_stif_size);
-
+    tcase_add_test(tc_parse_stif, parse_stif_width_height);
+    tcase_add_test(tc_parse_stif, parse_stif_first_data_null);
+  
     suite_add_tcase(s, tc_read_stif);
     suite_add_tcase(s, tc_parse_stif);
 

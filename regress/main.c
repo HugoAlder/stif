@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 	char *input_fn = NULL;
 	unsigned char *buffer;
 	size_t buffer_size;
-	stif_t *image;
+	stif_t *image = NULL;
 
 	/* Parse program parameters
 	 */
