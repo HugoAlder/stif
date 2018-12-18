@@ -1,10 +1,11 @@
 #!/bin/bash
 
 CFLAGS="--coverage -O0" LDFLAGS="-fprofile-arcs -ftest-coverage" make
+./bin/check_main
 mkdir cov
-mv $(find . -name "*.gc*") coverage
-cp $(find . -name "*.c") coverage
+mv $(find . -name "*.gc*") cov
+cp $(find . -name "*.c") cov
 cd cov
-lcov -d . -c -o cov_report
-genhtml cov_report
+lcov -d . -c -o report
+genhtml report
 

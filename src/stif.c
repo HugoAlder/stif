@@ -29,10 +29,6 @@ void stif_free(stif_t *s)
 
 stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, size_t *bytes_read)
 {
-    printf(">>>start read\n");
-
-    printf("buffer size %ld\n", buffer_size);
-
     // Checking if buffer is null
     if (buffer == NULL)
         return NULL;
@@ -49,11 +45,9 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
 
     // Data type
     memcpy(&(b->block_type), buffer, 1);
-    printf("block type %d\n", (int) b->block_type);
 
     // Data size
     memcpy(&(b->block_size), buffer + 1, 4);
-    printf("block size %d\n", (int) b->block_size);
 
     b->data = malloc((size_t) b->block_size);
 
@@ -62,12 +56,9 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
 
     // Bytes read
     *bytes_read = STIF_BLOCK_MIN_SIZE + b->block_size;
-    printf("bytes read %lu\n", *bytes_read);
 
     // Next block
     b->next = NULL;
-
-    printf(">>>end read\n");
 
     return b;
 }
@@ -80,7 +71,6 @@ void stif_block_free(stif_block_t *b)
 
     // Data
     free(b->data);
-    // b->data = NULL;
     if (b->next != NULL)
         stif_block_free(b->next);
     free(b);
@@ -90,9 +80,6 @@ void stif_block_free(stif_block_t *b)
 
 stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
 {
-    
-    printf(">>>start parse\n");
-
     // Checking if buffer is null
     if (buffer == NULL)
         return NULL;
@@ -113,8 +100,6 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     if (magic != STIF_MAGIC)
         goto error;
 
-    printf("magic %04X\n", magic);
-
     // Header block
     hb = read_stif_block(buffer + STIF_MAGIC_SIZE, STIF_BLOCK_HEADER_SIZE, &(bytes_read));
 
@@ -129,11 +114,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     if (h.width < 0 || h.height < 0)
         goto error;
 
-    printf("width %d\n", h.width);
-    printf("height %d\n", h.height);
-    printf("color type %d\n", h.color_type);
     size_t image_size = (size_t) h.width * h.height;
-    printf("image size %zu\n", image_size);
 
     // Stif data
     pixel_grayscale_t *grey = NULL;
@@ -149,7 +130,6 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         grey = malloc(image_size * sizeof(pixel_grayscale_t));
 
         if (grey == NULL) {
-            printf("Error: malloc grey\n");
             goto error;
         }
     } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
@@ -161,12 +141,10 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         color = malloc(image_size * sizeof(pixel_rgb_t));
 
         if (color == NULL) {
-            printf("Error: malloc color\n");
             goto error;
         }
     } else {
-        printf("Error: unknown color type\n");
-        
+        goto error;
     }
 
     i = STIF_MAGIC_SIZE + STIF_BLOCK_MIN_SIZE + STIF_BLOCK_HEADER_SIZE;
@@ -181,7 +159,6 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         curr = read_stif_block(buffer + i, buffer_size, &(bytes_read));
 
         if (curr == NULL) {
-            printf("Error: curr is NULL\n");
             goto error;
         }
 
@@ -203,8 +180,6 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
     s->rgb_pixels = color;
 
     s->block_head = hb; 
-
-    printf(">>>end parse\n");
 
     return s;
 
