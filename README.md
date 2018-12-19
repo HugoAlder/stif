@@ -2,8 +2,7 @@
 
 ## Auteurs
 
-Hugo Alder
-Aurélien Sille
+Hugo Alder, Aurélien Sille
 
 ## Usage
 
@@ -30,24 +29,6 @@ L'objectif de cet exercice était de parser un fichier image de type STIF. Une f
 **lcov :** Cet outil nous a permis de connaître le test coverage de notre programme.
 
 **afl :** Le fuzzing permet de créer des images aléatoires afin de tester un grand nombre de cas d'erreurs facilement. Nous avons "fuzzé" notre programme afin de déterminer les cas d'erreurs que nous n'avons pas traités.
-
-## Outils utilisés
-
-### valgrind
-
-Nous avons utilisé cet outil afin de détecter les fuites mémoires de notre programme.
-
-### check.h
-
-Cette librairie nous a permi d'écrire des tests unitaires.
-
-### lcov
-
-Cet outil nous a permis de connaître le test coverage de notre programme.
-
-### afl
-
-Le fuzzing permet de créer des images aléatoires afin de tester un grand nombre de cas d'erreurs facilement. Nous avons "fuzzé" notre programme afin de déterminer les cas d'erreurs que nous n'avons pas traités.
 
 ## Conception
 
