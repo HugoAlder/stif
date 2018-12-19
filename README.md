@@ -31,12 +31,6 @@ L'objectif de cet exercice était de parser un fichier image de type STIF. Une f
 
 **afl :** Le fuzzing permet de créer des images aléatoires afin de tester un grand nombre de cas d'erreurs facilement. Nous avons "fuzzé" notre programme afin de déterminer les cas d'erreurs que nous n'avons pas traités.
 
-## Conception
-
-Nous avons commencé par implémenter une version du parser qui ne traite que des images en noir et blanc. Puis nous avons géré le cas des images en couleur.
-
-Notre premier problème a été de trouver pourquoi notre image contenait une bande noire sur la droite. Il s'est avéré que ceci était dû à une utilisation érronée de la fonction memcpy.
-
 ## Outils utilisés
 
 ### valgrind
@@ -56,6 +50,10 @@ Cet outil nous a permis de connaître le test coverage de notre programme.
 Le fuzzing permet de créer des images aléatoires afin de tester un grand nombre de cas d'erreurs facilement. Nous avons "fuzzé" notre programme afin de déterminer les cas d'erreurs que nous n'avons pas traités.
 
 ## Conception
+
+Nous avons commencé par implémenter une version du parser qui ne traite que des images en noir et blanc. Puis nous avons géré le cas des images en couleur.
+
+Notre premier problème a été de trouver pourquoi notre image contenait une bande noire sur la droite. Il s'est avéré que ceci était dû à une utilisation érronée de la fonction memcpy.
 
 Nous avons ensuite dû adapter notre code pour qu'il fonctionne avec des images RGB. Cela n'a pas posé de problème majeur, mais nous avions d'abord oublié de décaler la position du pointeur de pixels RGB contenus dans la structure STIF finale. Il fallait diviser par 3 le nombre d'octets lus précédemment pour éviter une erreur de segmentation.
 
