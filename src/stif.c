@@ -13,11 +13,14 @@ void stif_free(stif_t *s)
     if (s == NULL) {
         return;
     }
-    if (s->grayscale_pixels != NULL)
-        free(s->grayscale_pixels);
 
-    if (s->rgb_pixels != NULL)
-        free(s->rgb_pixels);
+    if (s->header.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
+        if (s->grayscale_pixels != NULL)
+            free(s->grayscale_pixels);
+    } else if (s->header.color_type == STIF_COLOR_TYPE_RGB){
+        if (s->rgb_pixels != NULL)
+            free(s->rgb_pixels);
+    }
 
     if (s->block_head != NULL)
         stif_block_free(s->block_head);
@@ -37,9 +40,9 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
     if (buffer_size < STIF_BLOCK_MIN_SIZE)
         return NULL;
 
+    // Allocating block
     stif_block_t *b = malloc(sizeof(stif_block_t));
     if (b == NULL) {
-        stif_block_free(b);
         return NULL;
     }
 
@@ -53,7 +56,7 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
     *bytes_read = STIF_BLOCK_MIN_SIZE + b->block_size;
 
     if (*bytes_read > buffer_size) {
-        stif_block_free(b);
+        free(b);
         return NULL;
     }
 
@@ -70,7 +73,11 @@ stif_block_t *read_stif_block(const unsigned char *buffer, size_t buffer_size, s
 
 void stif_block_free(stif_block_t *b)
 {
-    if (b == NULL || b->data == NULL) {
+    if (b == NULL) {
+        return;
+    }
+
+    if (b->data == NULL) {
         return;
     }
 
@@ -170,6 +177,7 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         if (h.color_type == STIF_COLOR_TYPE_GRAYSCALE) {
             memcpy(grey + j, curr->data, (size_t) curr->block_size);
         } else if (h.color_type == STIF_COLOR_TYPE_RGB) {
+            // Skipping a pixels read / 3 octets because it's an RGB image
             memcpy(color + j / 3, curr->data, (size_t) curr->block_size);
         }
 
@@ -179,16 +187,15 @@ stif_t *parse_stif(const unsigned char *buffer, size_t buffer_size)
         i += bytes_read;
     }
 
+    // Constructing final STIF structure
     s->header = h;
     s->grayscale_pixels = grey;
     s->rgb_pixels = color;
-
     s->block_head = hb; 
 
     return s;
 
 error:
-    stif_free(s);
     return NULL;
 }
 
