@@ -14,6 +14,8 @@ Pour générer les informations concernant le test coverage, lancer le script `l
 
 Pour tester avec afl, lancer `afl.sh` (effectuer un `make clean` au préalable pour être sûr) puis lancer la commande `afl-fuzz -i [image/path] -o [output/path] bin/spcheck -i @@`.
 
+Pour lancer les tests unitaires, lancer `./bin/check_main`.
+
 Pour nettoyer le projet, lancer simple un `make clean` à la racine du projet.
 
 ## Objectif
